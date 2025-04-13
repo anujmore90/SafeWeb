@@ -1,34 +1,24 @@
-import requests
-import stem
-from stem.control import Controller
+import jwt
+import datetime
 
-def get_current_ip():
-    try:
-        response = requests.get("http://httpbin.org/ip", timeout=5)
-        return response.json()['origin']
-    except Exception as e:
-        return f"Error: {e}"
+SECRET_KEY = 'your_secret_key'
 
-def set_tor_proxy():
-    proxies = {
-        'http': 'socks5h://127.0.0.1:9050',
-        'https': 'socks5h://127.0.0.1:9050'
+# Function to create JWT token after successful login
+def create_jwt_token(user_id):
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    payload = {
+        'user_id': user_id,
+        'exp': expiration_time
     }
-    return proxies
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
 
-def request_new_tor_ip():
-    with Controller.from_port(port=9051) as controller:
-        controller.authenticate(password='your_tor_password')  # Replace with your password
-        controller.signal(stem.Signal.NEWNYM)
-
-if __name__ == "__main__":
-    print("🔍 Original IP:", get_current_ip())
-
-    proxies = set_tor_proxy()
-
-    # Use Tor network
+# Function to verify JWT token
+def verify_jwt_token(token):
     try:
-        response = requests.get("http://httpbin.org/ip", proxies=proxies, timeout=10)
-        print("🕵️ IP via Tor:", response.json()['origin'])
-    except Exception as e:
-        print("❌ Failed using Tor:", e)
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return decoded['user_id']  # Returns user ID if token is valid
+    except jwt.ExpiredSignatureError:
+        return None  # Token expired
+    except jwt.InvalidTokenError:
+        return None  # Invalid token
