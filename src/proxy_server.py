@@ -1,11 +1,7 @@
 import requests
 from stem import Signal
 from stem.control import Controller
-import logging
-from hashlib import sha256
-
-# Set up logging to capture events
-logging.basicConfig(filename="app.log", level=logging.INFO)
+from src.utils import log_event, generate_token, authenticate  # Import functions from utils.py
 
 # Function to get a Tor session (for routing requests through Tor)
 def get_tor_session():
@@ -34,25 +30,7 @@ def renew_tor_ip():
         controller.signal(Signal.NEWNYM)
         log_event("Tor IP address renewed.")
 
-# Log events to the log file
-def log_event(event):
-    logging.info(event)
-
-# Function to generate a hashed token for user authentication
-def generate_token(username, password):
-    return sha256(f"{username}{password}".encode('utf-8')).hexdigest()
-
-# Function to authenticate a user based on username, password, and stored token
-def authenticate(username, password, stored_token):
-    token = generate_token(username, password)
-    if token == stored_token:
-        log_event(f"User {username} authenticated successfully.")
-        return True
-    else:
-        log_event(f"Authentication failed for user {username}.")
-        return False
-
-# Example function to demonstrate proxy server functionality
+# Function to handle proxy requests (with or without Tor)
 def proxy_request(url, use_tor=True):
     if use_tor:
         log_event(f"Fetching data through Tor for URL: {url}")

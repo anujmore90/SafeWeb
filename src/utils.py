@@ -1,64 +1,23 @@
-# utils.py
-
 import logging
-import os
+from hashlib import sha256
 
-# Set up logging
-def setup_logging(log_file='app.log'):
-    """
-    Set up logging to log events to a file and to the console.
-    """
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
-    logging.info("Logging setup complete.")
+# Set up logging to capture events
+logging.basicConfig(filename="app.log", level=logging.INFO)
 
-# Read configuration from a file (e.g., for Tor or proxy settings)
-def read_config(config_file='config.json'):
-    """
-    Reads the configuration file and returns the configuration as a dictionary.
-    """
-    import json
-    if os.path.exists(config_file):
-        with open(config_file, 'r') as file:
-            config = json.load(file)
-            logging.info(f"Configuration loaded from {config_file}")
-            return config
-    else:
-        logging.error(f"Configuration file {config_file} not found!")
-        return None
+# Log events to the log file
+def log_event(event):
+    logging.info(event)
 
-# Handle errors by logging them
-def handle_error(error_message):
-    """
-    Logs the error message and can be used to raise or return the error.
-    """
-    logging.error(f"Error occurred: {error_message}")
-    raise Exception(error_message)  # You can choose to raise the error or just log it.
+# Function to generate a hashed token for user authentication
+def generate_token(username, password):
+    return sha256(f"{username}{password}".encode('utf-8')).hexdigest()
 
-# Example function to validate a URL (you could use this in your proxy server)
-def is_valid_url(url):
-    """
-    Check if a URL is valid.
-    """
-    import re
-    pattern = r'^(https?://)?([a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,6}(/[\w-]*)*$'
-    if re.match(pattern, url):
+# Function to authenticate a user based on username, password, and stored token
+def authenticate(username, password, stored_token):
+    token = generate_token(username, password)
+    if token == stored_token:
+        log_event(f"User {username} authenticated successfully.")
         return True
-    return False
-
-# Example function to parse command-line arguments
-def parse_arguments():
-    """
-    Parse command-line arguments for the app.
-    """
-    import argparse
-    parser = argparse.ArgumentParser(description='SafeWeb Proxy Server')
-    parser.add_argument('--config', help='Path to the configuration file', default='config.json')
-    parser.add_argument('--log', help='Log file name', default='app.log')
-    return parser.parse_args()
+    else:
+        log_event(f"Authentication failed for user {username}.")
+        return False
